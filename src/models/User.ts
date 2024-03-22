@@ -1,26 +1,27 @@
 import { Schema, model } from 'mongoose';
+import {ObjectId} from "mongodb"
 
 // 1. Create an interface representing a document in MongoDB.
 export interface IUser {
-  id?: number;
+  _id: ObjectId,
   created_at: Date,
-  first_name: string;
-  last_name: string;
-  birthdate: string;
-  phone_number?: string;
+  username: string;
   email?: string;
-  country?: string
+  role: string
+}
+export const  ROLES = { 
+  "ADMIN": "ADMIN",
+  "READER": "READER",
+  "WRITER": "WRITER"
 }
 
 // 2. Create a Schema corresponding to the document interface.
 const userSchema = new Schema<IUser>({
-    id:{ type: Number, required: true, unique: true },
+    _id: {type: Schema.Types.ObjectId, default: new ObjectId},
     created_at: { type: Date, default: Date.now },
-    first_name: { type: String, required: true },
-    last_name: { type: String, required: true },
+    username: { type: String, required: true },
     email: {type: String,  unique: true, required: true},
-    birthdate: { type: String },
-    country: { type: String }
+    role: { type: String, enum: Object.values(ROLES), required: true }
 });
 
 export const User = model<IUser>('User', userSchema);

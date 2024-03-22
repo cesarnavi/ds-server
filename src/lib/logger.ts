@@ -15,7 +15,8 @@ const COLORS = {
 }
 
 class Logger {
-    public baseDir: string;;
+    private filename: string =  "logger"
+    public baseDir: string;
     public logginTerminal: boolean = true;
 
     constructor() {
@@ -68,8 +69,7 @@ class Logger {
     }
 
     private getFilename() {
-        let date = new Date();
-        return "wispok.log"
+        return `${this.filename}.log`
     }
 }
 

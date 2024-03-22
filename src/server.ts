@@ -1,12 +1,13 @@
 import _express from "express";
 import router from "./router";
+import cors from "cors"
 import swaggerUi from "swagger-ui-express";
 import swaggerJsDoc from "swagger-jsdoc";
 import dotenv from "dotenv";
 import { connectToDatabase, nextSequence } from "./lib/database";
-import { readExcelFile } from "./lib/excelReader";
-import { User } from "./models";
 import logger from "./lib/logger";
+import { Category, ROLES, Topic, User } from "./models";
+import { DEFAULT_CATEGORIES, DEFAULT_TOPICS } from "./data";
 
 dotenv.config();
 
@@ -15,53 +16,39 @@ class Server {
     express: _express.Application;s
     port = process.env.PORT || 4000
 
-    async loadDummyData(){
-        const dummy_users = await readExcelFile();
-        if(dummy_users.length > 0 ){
-            logger.debug("Loading dummy data...");
-                let success = 0;
-                let updated = 0;
-                let errorUsers =[]
-                for await(let u of dummy_users){
-                    try{
-                        let updated = await User.findOneAndUpdate({
-                            email: u.email.toLowerCase()
-                        },{
-                            $set: u,
-                            $setOnInsert:{
-                                id: await nextSequence("users")
-                            }
-                        },{
-                            upsert: true
-                        })
-                        if(!updated){
-                            success++;
-                        }
-                       
-                    }catch(e){
-                        console.log(e);
-                       //Error due user insertion
-                       errorUsers.push({...u, errorMessage: e.message});
-                    }
-                }
-                //We could use insert many but if a row fails, all remaining users will fail
-                // let result =  await User.insertMany(dummy_users);
-            logger.debug(success, " dummy users inserted successfully");
-            logger.debug(errorUsers.length, " dummy users failed to load");
-        }
-       
-    }
 
     async loadDatabase(){ // Connects to database service
         try{
             await connectToDatabase();
-            logger.info("Connected to MongoDB")
+            if(process.env.NODE_ENV !== "PRODUCTION"){
+                await new User({
+                    email: "root@test.com",
+                    role: ROLES.ADMIN,
+                    username: "root"
+                })
+                .save()
+                .then(()=>logger.debug("Admin default user created successfully"))
+                .catch((e)=>{
+                    logger.debug("Default admin user already exists")
+                });
+                for await(let c of DEFAULT_CATEGORIES){
+                    await new Category({...c, include_external_url: c.include_external_url === true}).save().catch((e)=>{});
+                }
+                for await(let c of DEFAULT_TOPICS){
+                    await new Topic(c).save().catch((e)=>{});
+                }
+            }
+           
+
+
+            logger.info("Connected to MongoDB");
         }catch(e){
             logger.error("Error connecting to database: ",e.message);
+            process.exit(0);
         }
     }
 
-    loadServer(){  //Initialize express server
+    loadServer(){ //Initialize express server
         if(this.express){
             logger.warn(" [Server] Already initialized")
             return;
@@ -70,8 +57,13 @@ class Server {
         this.express = _express();
 
         // Add middlewares to the app
-        this.express.use(_express.json());
-        if(process.env.NODE_ENV != "production"){
+        this.express.use(_express.json({ limit: "16000kb"}));
+        this.express.use(cors({
+            origin :"*"
+        }));
+
+
+        if(process.env.NODE_ENV != "PRODUCTION"){
             this.express.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerJsDoc({
                 definition:{
                     openapi :"3.0.0",
@@ -99,7 +91,7 @@ class Server {
         // Start the server on the specified port
 		this.express.listen(Number(this.port), () => {
 			logger.info(`Server :: Running @ 'http://localhost:${this.port}'`);
-            if(process.env.NODE_ENV != "production")
+            if(process.env.NODE_ENV != "PRODUCTION")
                 logger.debug(`API documentation ready @ 'http://localhost:${this.port}/docs`);
 		}).on('error', (_error) => {
 			return logger.error('Error starting express: ', _error.message);

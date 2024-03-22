@@ -16,7 +16,6 @@ export async function connectToDatabase(){
     await mongoose.connect(mongoUri);
     connected = true;
     return;
- 
 }
 export async function nextSequence(collection: string, step: number = 1){
     if(!connected){
