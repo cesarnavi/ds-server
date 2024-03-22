@@ -5,4 +5,4 @@ package-lock.json
 dist/
 *.log
 .env
-Dockerfile
+uploads
