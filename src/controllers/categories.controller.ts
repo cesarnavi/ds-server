@@ -8,7 +8,6 @@ const normalizeStr = (str:string)=>str.toLowerCase().trim();
 export async function getCategories(req: Request, res: Response){
   
     const cats = await Category.aggregate([
-
         {
             "$lookup":{
                 "from": "topics",
@@ -30,9 +29,7 @@ export async function getCategories(req: Request, res: Response){
               id:1,
               name:1,
               extensions:1,
-                topics: {
-                    $size: "$topics"
-                }
+              topics: 1
             }
         }
     ]);
@@ -58,7 +55,14 @@ export async function createCategory(req: Request, res: Response) {
  
     if(!extensions) {
         return onError(res, "Extensions is required");
+    }else{
+      if(!Array.isArray(extensions)){
+        return onError(res, "Extensions must be an array");
+      }
+      extensions = extensions.filter(s=>typeof s === "string").map((el:string)=>normalizeStr(el));
     }
+    
+    
   
     name = normalizeStr(name);
     id = normalizeStr(id).toUpperCase();
@@ -92,4 +96,55 @@ export async function createCategory(req: Request, res: Response) {
     console.log(" [Category] Created successfully: ", cat);
   
     return res.status(200).send(cat);
+}
+
+export async function editCategoryById(req: Request, res: Response) {
+
+  let {
+    id
+  } = req.params;
+
+  let {
+      name,
+      extensions,
+      include_external_url
+  } = req.body;
+
+  let alreadyExistCat = await Category.findOne({id});
+  if (!alreadyExistCat) {
+    return onError(res, "Not found");
+  }
+
+  if(extensions && Array.isArray(extensions)){
+    alreadyExistCat.extensions = extensions.filter(s=>typeof s === "string").map((el:string)=>normalizeStr(el));
+  }
+                                                                                                                                                                                                                                                                                        
+  if(name && alreadyExistCat.name != name){
+    if(await Category.countDocuments({name: name}) == 0){
+      alreadyExistCat.name = name;
+    }
+  }
+
+  if(typeof include_external_url === "boolean"){
+    alreadyExistCat.include_external_url = include_external_url;
+  }
+
+
+
+  await alreadyExistCat.save();
+  return res.status(200).send(alreadyExistCat);
+}
+
+export async function deleteCategoryById(req: Request, res: Response) {
+  let {
+    id
+  } = req.params;
+  if(!id) return onError(res, "Invalid ID")
+  let deleted = await Category.deleteOne({id: String(id).toUpperCase()});
+  if(deleted.deletedCount == 1){
+    return res.status(200).send("ok");
+  }else{
+    return onError(res, "Categoria no encontrada");
+  }
+  
 }

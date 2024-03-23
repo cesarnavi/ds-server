@@ -32,10 +32,31 @@ export async function login(req: Request, res: Response){
 
     // Return the JWT in our response.
     return res.type('json').send({ 
+        _id: user._id,
         token,
         username: user.username, 
         role: user.role 
     });
 }
+export async function me(req: Request, res: Response){
+
+    let user = req ["user"]
+    if(!user) return onError(res, "Unauthorized");
+    // Generate and sign a JWT that is valid for one hour.
+    const token = generateJWT({ 
+        _id: user._id, 
+        username: user.username, 
+        role: user.role 
+    }, 60*60);
+
+    // Return the JWT in our response.
+    return res.type('json').send({ 
+        _id: user._id,
+        token,
+        username: user.username, 
+        role: user.role 
+    });
+}
+
 
 

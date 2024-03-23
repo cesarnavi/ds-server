@@ -76,6 +76,7 @@ export async function createUser(req: Request, res: Response) {
 }, 60*60);
 
   return res.status(200).send({
+    _id: user._id,
     token,
     username: user.username, 
     role: user.role 
@@ -89,21 +90,85 @@ export async function getUsers(req: Request, res: Response) {
 }
 
 export async function deleteUserById(req: Request, res: Response){
-  const { userId } = req.params;
-  if(!userId){
+  const { _id } = req.params;
+  if(!_id){
     return onError(res, "Invalid ID");
   }
- 
-  const user = await User.findOne({ id: userId });
+  if(!ObjectId.isValid(_id)){
+    return onError(res, "Invalid ObjectID");
+  }
+
+  const user = await User.findById(new ObjectId(_id));
   if(!user){
-    return onError(res,"User not found");
+    return onError(res,"Usuario no encontrado");
+  }
+  if(req["user"]._id == user._id){
+    return onError(res,"No puede eliminar su propia cuenta");
+  }
+  if(!user){
+    return onError(res,"Usuario no encontrado");
   }
 
   await User.deleteOne({
-    id: userId
-  })
-  
+    _id: user._id
+  });
 
   return res.status(202).send("ok");
 
 }
+
+export async function updateUserById(req: Request, res: Response){
+  const { _id } = req.params;
+  let {
+    role,
+    username,
+    email
+  } = req.body;
+
+  if(!_id){
+    return onError(res, "Invalid ID");
+  }
+  if(!ObjectId.isValid(_id)){
+    return onError(res, "Invalid ObjectID");
+  }
+
+  const user = await User.findById(new ObjectId(_id));
+  if(!user){
+    return onError(res,"Usuario no encontrado");
+  }
+
+  let authUser = req["user"];
+  if(authUser.role != ROLES.ADMIN && authUser._id != user._id){
+    return onError(res, "Solo puede editar otros usuarios como administrador")
+  }
+
+  if(email){
+    email = normalizeStr(email)
+    let alreadyExistEmail = await User.countDocuments({ email: email });
+    if (alreadyExistEmail) {
+      return onError(res, "Ya existe el correo");
+    }
+    user.email = email;
+  }
+
+  if(username){
+    username = normalizeStr(username);
+    let alreadyExistUsername = await User.countDocuments({ username: username });
+    if (alreadyExistUsername) {
+      return onError(res, "Ya existe nombre de usuario");
+    }
+    user.username = username;
+  }
+
+  if(role){
+    role = normalizeStr(role).toUpperCase();
+    if(!Object.values(ROLES).includes(role)) return onError(res,"Rol invalido");
+    if(role == ROLES.ADMIN && authUser.role != ROLES.ADMIN) return onError(res,"Solo admins pueden cambiar el rol");
+    user.role = role;
+  }
+
+  await user.save();
+
+  return res.status(202).send(user);
+}
+

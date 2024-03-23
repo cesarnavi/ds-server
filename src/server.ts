@@ -81,7 +81,11 @@ class Server {
                 },
                 apis: [
                     "./src/routes/auth.routes.ts",
+                    "./src/routes/categories.routes.ts",
+                    "./src/routes/items.routes.ts",
+                    "./src/routes/topics.routes.ts",
                     "./src/routes/users.routes.ts"
+                   
                 ]
             })));
         }

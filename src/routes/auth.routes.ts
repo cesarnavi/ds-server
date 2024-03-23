@@ -1,5 +1,7 @@
-import { login } from "../controllers/auth.controller";
+import { authentication, authorization } from "../middlewares";
+import { login, me } from "../controllers/auth.controller";
 import { Router } from "express";
+import { ROLES } from "../models";
 const authRoutes = Router();
 /**
  * @swagger
@@ -15,4 +17,5 @@ const authRoutes = Router();
  * 
 */
 authRoutes.post("/login", login);
+authRoutes.get("/me",authentication,authorization(ROLES.ADMIN,ROLES.READER, ROLES.WRITER), me);
 export default authRoutes;

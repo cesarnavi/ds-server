@@ -1,12 +1,12 @@
 import { Router} from "express";
 import { authentication } from "../middlewares";
-import { createUser, getUsers} from "../controllers"
+import { createUser, deleteUserById, getUsers, updateUserById} from "../controllers"
 import { authorization } from "../middlewares/authorization";
+import { ROLES } from "../models";
 const router = Router();
 
 /**
  * @swagger
-
  * components:
  *    securitySchemes:
  *      bearerAuth:
@@ -27,41 +27,11 @@ const router = Router();
  *          username:
  *            type: string
  *          role:  
+ *            enum: ["ADMIN", "READER", "WRITER"]
  *            type: string
  *          email:
  *            type: string   
- *      Category:
- *        type: object
- *        required:
- *          -cover_url
- *          -name
- *          -slug
- *        properties:
- *          cover_url:
- *            type: string
- *          name:  
- *            type: string
- *          slug:
- *            type: string
- *          topics:
- *            type: integer
- *      Topic:
- *        type: object
- *        required:
- *          -category_slug
- *          -name
- *          -slug
- *        properties:
- *          category_slug:
- *            type: string
- *          name:  
- *            type: string
- *          slug:
- *            type: string
- *          category_name:
- *            type: string
  */
-
 /**
  * @swagger
  *  /users:
@@ -92,8 +62,7 @@ const router = Router();
  *                 
 
 */
-router.get("/", authentication, authorization("ADMIN"), getUsers);
-
+router.get("/", authentication, authorization(ROLES.ADMIN), getUsers);
 /**
  * @swagger
  *  /users:
@@ -106,7 +75,15 @@ router.get("/", authentication, authorization("ADMIN"), getUsers);
  *        content:
  *          application/json:
  *            schema:
- *              $ref: '#/components/schemas/User'
+ *              type: object
+ *              properties:
+ *                username:
+ *                  type: string
+ *                role:  
+ *                  enum: [ADMIN,READER,WRITER"]
+ *                  type: string
+ *                email:
+ *                 type: string   
  *      responses:
  *        200:
  *          description: User created successfully
@@ -118,5 +95,7 @@ router.get("/", authentication, authorization("ADMIN"), getUsers);
  *                  $ref: "#/components/schemas/User"
  */
 router.post("/",createUser);
+router.put("/:_id", authentication, authorization(ROLES.ADMIN), updateUserById);
+router.delete("/:_id", authentication, authorization(ROLES.ADMIN), deleteUserById);
 
 export default router;

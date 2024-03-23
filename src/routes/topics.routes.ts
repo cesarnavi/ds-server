@@ -1,9 +1,10 @@
 import { Router} from "express";
 import { authentication } from "../middlewares";
 import { authorization } from "../middlewares/authorization";
-import { createTopic, getTopicBySlug, getTopics } from "../controllers/topics.controller";
-const router = Router();
+import { createTopic, deleteTopicBySlug, getTopicBySlug, getTopics, updateTopicBySlug } from "../controllers/topics.controller";
+import { ROLES } from "../models";
 
+const router = Router();
 /**
  * @swagger
  *  /topics:
@@ -24,7 +25,6 @@ const router = Router();
  *                      $ref: "#/components/schemas/Topic"
 */
 router.get("/",getTopics);
-
 /**
  * @swagger
  *  /topics/:slug:
@@ -33,8 +33,7 @@ router.get("/",getTopics);
  *      description: Get an specific topic and its items
 */
 router.get("/:slug",getTopicBySlug);
-
-
+router.delete("/:slug",authentication, authorization(ROLES.ADMIN),deleteTopicBySlug);
 /**
  * @swagger
  *  /topics:
@@ -58,6 +57,7 @@ router.get("/:slug",getTopicBySlug);
  *                propierties:
  *                  $ref: "#/components/schemas/Topic"
  */
-router.post("/",authentication, authorization("ADMIN"), createTopic);
+router.post("/",authentication, authorization(ROLES.ADMIN), createTopic);
+router.put("/:slug",authentication, authorization(ROLES.ADMIN), updateTopicBySlug);
 
 export default router;

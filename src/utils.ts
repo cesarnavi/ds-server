@@ -1,8 +1,11 @@
 import { Response } from "express";
 
-export function createSlug(str=""){
-   return str.trim().toLowerCase().normalize("NFC").replace(" ","-")
-}
+export const createSlug = (str="") => str.normalize('NFD')
+.replace(/[\u0300-\u036f]/g, '')
+.trim().
+toLowerCase()
+.replace(" ","-")
+
 export const onError = (res: Response, msg: string) => {
     return res.status(400).send({ message: msg });
 };
