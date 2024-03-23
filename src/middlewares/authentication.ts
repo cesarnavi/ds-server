@@ -11,7 +11,7 @@ if(!secret){
 }
 
 export async function authentication(req: Request, res: Response, next: NextFunction){
-    const token = req.header("Authorization");
+    const token = req.header("Authorization") || req.query._ as string;
     if(!token){
         console.log(" [authentication] Access Denied: No token provided ")
         return onError(res, "invalid token")

@@ -17,5 +17,5 @@ const authRoutes = Router();
  * 
 */
 authRoutes.post("/login", login);
-authRoutes.get("/me",authentication,authorization(ROLES.ADMIN,ROLES.READER, ROLES.WRITER), me);
+authRoutes.get("/me",authentication, me);
 export default authRoutes;

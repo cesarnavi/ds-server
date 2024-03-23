@@ -2,7 +2,7 @@ import { Router} from "express";
 import { authentication } from "../middlewares";
 import { authorization } from "../middlewares/authorization";
 import { ROLES } from "../models";
-import { createItem } from "../controllers/items.controller";
+import { createItem, deleteItemById, getFileFromItem, getItems, updateItemById } from "../controllers/items.controller";
 const router = Router();
 
 /**
@@ -33,5 +33,10 @@ authentication,
 authorization(ROLES.ADMIN, ROLES.WRITER), 
 createItem,
 );
+
+router.get("/",authentication,getItems);
+router.put("/:_id",authentication, authorization(ROLES.WRITER, ROLES.ADMIN),updateItemById);
+router.delete("/:_id",authentication, authorization(ROLES.ADMIN),deleteItemById);
+router.get("/:_id/file",authentication, authorization(ROLES.READER, ROLES.ADMIN),getFileFromItem);
 
 export default router;

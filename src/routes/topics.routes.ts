@@ -24,7 +24,7 @@ const router = Router();
  *                    items:
  *                      $ref: "#/components/schemas/Topic"
 */
-router.get("/",getTopics);
+router.get("/",authentication,getTopics);
 /**
  * @swagger
  *  /topics/:slug:
@@ -32,7 +32,7 @@ router.get("/",getTopics);
  *      summary: Get an specific topic and its items
  *      description: Get an specific topic and its items
 */
-router.get("/:slug",getTopicBySlug);
+router.get("/:slug",authentication,getTopicBySlug);
 router.delete("/:slug",authentication, authorization(ROLES.ADMIN),deleteTopicBySlug);
 /**
  * @swagger

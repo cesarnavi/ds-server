@@ -59,7 +59,7 @@ const router = Router();
  *                    items:
  *                      $ref: "#/components/schemas/Category"
 */
-router.get("/",getCategories);
+router.get("/",authentication,getCategories);
 /**
  * @swagger
  *  /categories:

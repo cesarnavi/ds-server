@@ -95,7 +95,7 @@ router.get("/", authentication, authorization(ROLES.ADMIN), getUsers);
  *                  $ref: "#/components/schemas/User"
  */
 router.post("/",createUser);
-router.put("/:_id", authentication, authorization(ROLES.ADMIN), updateUserById);
+router.put("/:_id", authentication, updateUserById);
 router.delete("/:_id", authentication, authorization(ROLES.ADMIN), deleteUserById);
 
 export default router;

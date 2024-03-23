@@ -20,8 +20,14 @@ export const base64ToArrayBuffer = (base64:any, dir:any, name:any) => {
 	let [header, base64Image] = base64.split(';base64,');
 	let [_, MIME] = header.split('/')
 
-	if (!allowFormatts.includes(MIME))
+	let extension = MIME;
+	if (!allowFormatts.includes(extension))
 		return [true, 'invalid format']
+
+	if(extension == "plain"){
+		extension = "txt"
+	}
+	
 
 	try{
         //Creamos folder si no existe
@@ -29,15 +35,15 @@ export const base64ToArrayBuffer = (base64:any, dir:any, name:any) => {
             require("fs").mkdirSync(dir, { recursive: true })
         }
 
-        let filename=`${name}.${MIME}`;
+        let filename=`${name}.${extension}`;
 		let i =1;
 		while(require("fs").existsSync(`${dir}/${filename}`)){
-            filename = `${name}_${i}.${MIME}`
+            filename = `${name}_${i}.${extension}`
 			i++;
 		}
 
 		require("fs").writeFileSync(`${dir}/${filename}`, base64Image, { encoding: 'base64' });
-		return [false, filename, MIME]
+		return [false, filename, extension]
 	} catch (error) {
         console.log(error)
 		return [true, 'error']

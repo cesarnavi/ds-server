@@ -6,6 +6,9 @@ import { ObjectId } from "mongodb";
 import Path from "path";
 import fs from "fs";
 import { base64ToArrayBuffer } from "../utils";
+import logger from "../lib/logger";
+import { Console } from "console";
+
 
 const DIR_NAME = `${__dirname}/../../uploads`;
 
@@ -18,7 +21,14 @@ const ITEM_TYES = {
   "pdf": "PDF"
 }
 
-
+const deleteFile =(folder:string,filename:string)=>{
+  try{
+    fs.rmSync(`${DIR_NAME}/${folder}/${filename}`);
+  }catch(e){
+    logger.error("Error deleting file: ", folder, filename)
+  }
+  
+}
 
 export async function createItem(req: Request, res: Response, next: NextFunction) {
   let {
@@ -29,8 +39,8 @@ export async function createItem(req: Request, res: Response, next: NextFunction
   } = req.body;
 
   const topic = await Topic.findOne({ slug: topic_slug });
-  if (!topic)  return onError(res, "Topic not found");
-  if(!name) return onError(res, "Required item name");
+  if (!topic)  return onError(res, "Temática no existe");
+  if(!name) return onError(res, "name es requerido para el elemento");
   let alreadyExist = await Item.countDocuments({
     $and: [
       {
@@ -53,12 +63,13 @@ export async function createItem(req: Request, res: Response, next: NextFunction
   });
   //Check type
   if(video_url){
-    if (!isYoutubeLink(video_url)) return onError(res, "Invalid Youtube link");
-    item.item_type = "VIDEO_URL"
+    if (!isYoutubeLink(video_url)) return onError(res, "Formato de video Youtube inválido");
+    item.item_type = "VIDEO_URL";
     item.item_video_url = video_url;
   }else{ //Check file
-    if(!file) return onError(res, "Required file");
-    if(!file.b64)return onError(res, "Required b64 file");
+    if(!file) return onError(res, "Se requiere un archivo o url de video youtube");
+    if(!file.name)return onError(res, "Se requiere un nombre para el elemento");
+    if(!file.b64)return onError(res, "Se requiere el archivo en formato base64 ");
     //Save the file 
     const folder = `${DIR_NAME}/${topic_slug}`
     if (!fs.existsSync(folder)) {
@@ -92,3 +103,151 @@ export async function getItem(req: Request, res: Response) {
   }
   res.sendFile(path)
 };
+
+export async function getItems(req: Request, res: Response) {
+  const {
+    content_types,
+    name,
+    topics
+  } = req.query;
+
+  let filter:any = {}
+
+
+  let items = await Item.aggregate([
+    {
+      $match: filter
+    },
+    {
+      $sort:{
+        created_at: -1
+      }
+    }
+  ]);
+  return res.json(items);
+}
+export async function updateItemById(req: Request, res: Response) {
+  let{
+    _id
+  } = req.params;
+
+  if(!_id) return onError(res, "Necesita _id del elemento");
+  if(!ObjectId.isValid(_id)) return onError(res, "_id inválido");
+
+  let item = await Item.findById(_id);
+  if(!item) return onError(res, "Elemento no encontrado");
+
+  let {
+    topic_slug,
+    name,
+    file,
+    video_url, // for yt video
+  } = req.body;
+
+  if(topic_slug){
+    const topic = await Topic.findOne({ slug: topic_slug });
+    if (!topic)  return onError(res, "Temática no existe");
+
+    item.topic_slug = topic_slug;
+  }
+
+  if(name){
+    let alreadyExist = await Item.countDocuments({
+      $and: [
+        {
+          topic_slug: item.topic_slug
+        },
+        {
+          item_name: name
+        }
+      ]
+    });
+    if(alreadyExist) return onError(res,"Ya existe el nombre")
+  }
+
+  if(video_url){
+    if (!isYoutubeLink(video_url)) return onError(res, "Formato de video Youtube inválido");
+    item.item_type = "VIDEO_URL";
+    item.item_video_url = video_url;
+    if(item.file){//elimianmos item actual
+      deleteFile(item.file.folder_name as string,item.file.name as string);
+      item.file = null;
+    }
+  }else if(file){
+    if(!file.name)return onError(res, "Se requiere un nombre para el elemento");
+    if(!file.b64)return onError(res, "Se requiere el archivo en formato base64 ");
+    //Save the file 
+    const folder = `${DIR_NAME}/${item.topic_slug}`
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder, { recursive: true });
+    }
+    let _ = new ObjectId().toString();
+    const [errors, filename, extension] = base64ToArrayBuffer(file.b64, folder, _);
+    if (errors) return onError(res, "Error guardando archivo: "+ filename);
+
+    item.item_type = ITEM_TYES[extension];
+    if(item.file){ // Eliminamos el archivo actual
+      deleteFile(item.file.folder_name as string,item.file.name as string);
+    }
+    if(item.item_video_url){
+      item.item_video_url = null;
+    }
+
+    item.file = {
+      name: filename,
+      original_name: file.name,
+      folder_name: item.topic_slug,
+      extension: extension,
+    }
+  }
+  
+  await item.save();
+  return res.status(200).send(item);
+
+}
+
+export async function deleteItemById(req: Request, res: Response) {
+  let{
+    _id
+  } = req.params;
+
+  if(!_id) return onError(res, "Necesita _id del elemento");
+  if(!ObjectId.isValid(_id)) return onError(res, "_id inválido");
+
+  let item = await Item.findById(_id);
+  if(!item) return onError(res, "Elemento no encontrado");
+
+  if(item.file){
+    deleteFile(item.file.folder_name as string, item.file.name as string);
+  }
+  let deleted = await Item.deleteOne({ _id: item._id });
+  if (deleted.deletedCount == 1) {
+    return res.status(202).send("ok");
+  } else {
+    return onError(res, "Error eliminando elemento");
+  }
+}
+
+export async function getFileFromItem(req: Request, res: Response) {
+  let{
+    _id
+  } = req.params;
+
+  if(!_id) return onError(res, "Necesita _id del elemento");
+  if(!ObjectId.isValid(_id)) return onError(res, "_id inválido");
+
+  let item = await Item.findById(_id);
+  if(!item) return onError(res, "Elemento no encontrado");
+
+  if(!item.file){
+    return onError(res, "Archivo no encontrado");
+  }
+
+  const f = Path.resolve(`${DIR_NAME}/${item.file.folder_name}/${item.file.name}`);
+  if(!fs.existsSync(f)){
+    return onError(res, "Archivo no existe");
+  }
+
+  return res.sendFile(f);
+  
+}

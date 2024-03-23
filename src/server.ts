@@ -57,7 +57,7 @@ class Server {
         this.express = _express();
 
         // Add middlewares to the app
-        this.express.use(_express.json({ limit: "16000kb"}));
+        this.express.use(_express.json({ limit: "16000kb" }));
         this.express.use(cors({
             origin :"*"
         }));
