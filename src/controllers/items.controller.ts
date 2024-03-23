@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express"
-import { Category, Topic } from "../models";
+import { Category, ROLES, Topic } from "../models";
 import { createSlug, isYoutubeLink, onError } from "../utils";
 import { IItem, Item } from "../models/Item";
 import { ObjectId } from "mongodb";
@@ -106,24 +106,23 @@ export async function getItem(req: Request, res: Response) {
 
 export async function getItems(req: Request, res: Response) {
   const {
-    content_types,
-    name,
-    topics
+    name
   } = req.query;
 
   let filter:any = {}
 
-
-  let items = await Item.aggregate([
-    {
-      $match: filter
-    },
-    {
-      $sort:{
-        created_at: -1
-      }
+  if(name){
+    filter.item_name = {
+      $regex:  name,
+      $options: "i"
     }
-  ]);
+  }
+
+  let items = await Item.find(filter,null,{ lean: true});
+  if(req["user"].role == ROLES.WRITER){
+    return res.json(items.map((el)=>({...el, item_video_url: null})))
+  }
+
   return res.json(items);
 }
 export async function updateItemById(req: Request, res: Response) {
@@ -238,6 +237,10 @@ export async function getFileFromItem(req: Request, res: Response) {
 
   let item = await Item.findById(_id);
   if(!item) return onError(res, "Elemento no encontrado");
+
+  if(item.item_video_url){
+    return res.redirect(item.item_video_url as string);
+  }
 
   if(!item.file){
     return onError(res, "Archivo no encontrado");
