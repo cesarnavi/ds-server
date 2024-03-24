@@ -106,7 +106,9 @@ export async function getItem(req: Request, res: Response) {
 
 export async function getItems(req: Request, res: Response) {
   const {
-    name
+    name,
+    item_type,
+    topic
   } = req.query;
 
   let filter:any = {}
@@ -117,8 +119,20 @@ export async function getItems(req: Request, res: Response) {
       $options: "i"
     }
   }
+  if(item_type){
+    let itemtypes = String(item_type).split(",")
+    filter.item_type = {
+      $in: itemtypes
+    }
+  }
+  if(topic){
+    let topics = String(topic).split(",")
+    filter.topic_slug = {
+      $in: topics
+    }
+  }
 
-  let items = await Item.find(filter,null,{ lean: true});
+  let items = await Item.find(filter,null,{ lean: true  });
   if(req["user"].role == ROLES.WRITER){
     return res.json(items.map((el)=>({...el, item_video_url: null})))
   }

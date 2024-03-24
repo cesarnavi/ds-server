@@ -16,23 +16,23 @@ export async function createUser(req: Request, res: Response) {
   } = req.body;
 
   if (!email) {
-    return onError(res, "Email is required");
+    return onError(res, "Email es requerido");
   }
   if (!username) {
-    return onError(res, "Username is required");
+    return onError(res, "Username es requerido");
   }
   if(!role) {
-    return onError(res, "Role is required");
+    return onError(res, "Role es requerido");
   }
 
   role = role.toUpperCase();
 
   if(!Object.values(ROLES).includes(role.toUpperCase())){
-    return onError(res, "Invalid role");
+    return onError(res, "Rol invalido");
   }
  
   if(!emailRegex.test(email)) {
-    return onError(res, "Invalid email format");
+    return onError(res, "Formato de correo invalido");
   }
   //Verify admin role creation, only admins can create admin users
   if(role == ROLES.ADMIN){
@@ -47,12 +47,12 @@ export async function createUser(req: Request, res: Response) {
 
   let alreadyExistEmail = await User.countDocuments({ email: email });
   if (alreadyExistEmail) {
-    return onError(res, "Email already exists");
+    return onError(res, "Correo ya ha sido registrado");
   }
 
   let alreadyExistUsername = await User.countDocuments({ username: username });
   if (alreadyExistUsername) {
-    return onError(res, "Username already exists");
+    return onError(res, "Nombre de usuario ya existe");
   }
   
   let user = null;

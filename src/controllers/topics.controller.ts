@@ -7,49 +7,81 @@ const normalizeStr = (str: string) => str.toLowerCase().trim();
 
 export async function getTopics(req: Request, res: Response) {
 
-  const topics = await Topic.aggregate([{
-    $match: {
-      active: true
+  const { name } = req.query;
+
+  let filter: any = {
+    active: true
+  }
+
+  if (name) {
+    filter.name = {
+      $regex: name,
+      $options: "i"
     }
-  }, {
-    $unwind: {
-      path: '$content_types',
-      preserveNullAndEmptyArrays: true
-    }
-  }, {
-    $lookup: {
-      from: 'items',
-      localField: 'content_types',
-      foreignField: 'item_type',
-      as: 'items'
-    }
-  },
-  {
-    $group: {
-      _id: '$_id',
-      name: {
-        $first: '$name'
-      },
-      slug: {
-        $first: '$slug'
-      },
-      image_url: {
-        $first: '$image_url'
-      },
-      content_types: {
-        $push: {
-          key: '$content_types',
-          items: {
-            $size: '$items'
-          }
-        }
+  }
+
+  const topics = await Topic.aggregate([{$match:filter},{$unwind: {
+    path: '$content_types',
+    preserveNullAndEmptyArrays: true
+   }}, {$lookup: {
+    from: 'items',
+    'let': {
+     content_type: '$content_types',
+     slug: '$slug'
+    },
+    pipeline: [
+     {
+      $match: {
+       $expr: {
+        $and: [
+         {
+          $eq: [
+           '$topic_slug',
+           '$$slug'
+          ]
+         },
+         {
+          $eq: [
+           '$item_type',
+           '$$content_type'
+          ]
+         }
+        ]
+       }
       }
+     }
+    ],
+    as: 'items'
+   }}, {$lookup: {
+    from: 'categories',
+    localField: 'content_types',
+    foreignField: 'id',
+    as: 'cat'
+   }}, {$unwind: {
+    path: '$cat'
+   }}, {$group: {
+    _id: '$_id',
+    name: {
+     $first: '$name'
+    },
+    slug: {
+     $first: '$slug'
+    },
+    image_url: {
+     $first: '$image_url'
+    },
+    content_types: {
+     $push: {
+      id: '$content_types',
+      name: '$cat.name',
+      items: {
+       $size: '$items'
+      }
+     }
     }
-  }, {
-    $sort: {
-      name: 1
-    }
-  }]);
+   }}, {$sort: {
+    name: 1
+   }}]);
   // Return the JWT in our response.
   return res.type('json').send(topics);
 }
