@@ -1,14 +1,12 @@
 import { Request, Response, NextFunction } from "express"
-import { Category, ROLES, Topic } from "../models";
-import { createSlug, isYoutubeLink, onError } from "../utils";
-import { IItem, Item } from "../models/Item";
+import { ROLES, Topic } from "../models";
+import { isYoutubeLink, onError } from "../utils";
+import { Item } from "../models/Item";
 import { ObjectId } from "mongodb";
 import Path from "path";
 import fs from "fs";
 import { base64ToArrayBuffer } from "../utils";
 import logger from "../lib/logger";
-import { Console } from "console";
-
 
 const DIR_NAME = `${__dirname}/../../uploads`;
 
@@ -18,6 +16,7 @@ const ITEM_TYES = {
   "webp": "IMAGE",
   "jpeg": "IMAGE",
   "plain": "TXT",
+  "txt": "TXT",
   "pdf": "PDF"
 }
 
@@ -227,12 +226,13 @@ export async function deleteItemById(req: Request, res: Response) {
   if(!_id) return onError(res, "Necesita _id del elemento");
   if(!ObjectId.isValid(_id)) return onError(res, "_id inválido");
 
-  let item = await Item.findById(_id);
+  let item = await Item.findById(_id).lean();
   if(!item) return onError(res, "Elemento no encontrado");
 
   if(item.file){
     deleteFile(item.file.folder_name as string, item.file.name as string);
   }
+  logger.warn(" Deleting item: ", JSON.stringify(item));
   let deleted = await Item.deleteOne({ _id: item._id });
   if (deleted.deletedCount == 1) {
     return res.status(202).send("ok");

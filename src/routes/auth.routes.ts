@@ -4,7 +4,7 @@ import { Router } from "express";
 const authRoutes = Router();
 /**
  * @swagger
- * /auth/login:
+ *  /auth/login:
  *    get:
  *      summary: Login with username and email
  *      responses:
@@ -12,11 +12,14 @@ const authRoutes = Router();
  *         description: Get a 1 hour valid token
  *       '5XX':
  *         description: Unexpected error.
- * 
- * 
+*/
+authRoutes.post("/login", login);
+/**
+ * @swagger
  *  /auth/me:
  *    get:
  *      summary: Get the informacion based on jwt in headers and returns a refresh token
+ *      responses:
  *       '200':
  *         description: Get a 1 hour valid token and session info
  *       '5XX':
@@ -24,6 +27,5 @@ const authRoutes = Router();
  * 
  * 
 */
-authRoutes.post("/login", login);
 authRoutes.get("/me",authentication, me);
 export default authRoutes;
