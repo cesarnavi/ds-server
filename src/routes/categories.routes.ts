@@ -71,8 +71,18 @@ router.get("/",authentication,getCategories);
  *        required: true
  *        content:
  *          application/json:
- *            schema:
- *              $ref: '#/components/schemas/Category'
+ *          properties:
+ *              id: 
+ *                type: string
+ *                description: An descriptive ID for the category files, UPPERCASE
+ *              name:
+ *                description: Category name, human readable example-> Maths, Science, Sports
+ *                type: string
+ *              extensions:  
+ *                type: array
+ *                items:
+ *                  type: string
+ *                example: [".pdf", ".mp3"]
  *    put:   
  *      summary: Edit a current category
  *      description: Use to update an existing category

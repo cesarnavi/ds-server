@@ -7,26 +7,78 @@ const router = Router();
 
 /**
  * @swagger
+ * components:
+ *    schemas:
+ *      File:
+ *        type: object
+ *        required:
+ *          -name
+ *          -b64
+ *        properties:
+ *          b64: 
+ *            type: string
+ *            description: Representation of a file in Base 64 Data Uri
+ *          name:
+ *            type: string
+ *            description: The original name of the file
+ *      Item:
+ *        type: object
+ *        required:
+ *          -topic_slug
+ *          -name
+ *        properties:
+ *          topic_slug: 
+ *            type: string
+ *            description: The id of the specified category
+ *          name:
+ *            description: Item name to be shown 
+ *            type: string
+ *          file:  
+ *            type: object
+ *            properties:
+ *              $ref: "#/components/schemas/Item"
+ *          video_url:
+ *            description: Youtube link to specified video
+ *            type: string
+ */
+
+/**
+ * @swagger
  *  /items:
  *    post:   
- *      summary: Create a new item
- *      description: Use to create a new item
+ *      summary: Create a item
+ *      description: Create a new item with youtube video or file 
  *      requestBody:
- *        description: required fields are (description, slug, cover_url)
+ *        description: required fields are (topic_id, name, file or video url)
  *        required: true
  *        content:
  *          application/json:
  *            schema:
- *              $ref: '#/components/schemas/Topic'
+ *              type: object
+ *              properties:
+ *                id: 
+ *                  type: string
+ *                  description: An descriptive ID for the category files, UPPERCASE
+ *                name:
+ *                  description: Category name; human readable example-> Maths Science Sports
+ *                  type: string
+ *                video_url:
+ *                  description: Youtube link to specified video, required if file is missing
+ *                  type: string
+ *                file:  
+ *                  description: File to be uploaded, required if video_url is missing
+ *                  type: object
+ *                  properties:
+ *                    b64: 
+ *                      type: string
+ *                      description: Representation of a file in Base 64 Data Uri
+ *                    name:
+ *                      type: string
+ *                      description: The original name of the file
  *      responses:
  *        200:
- *          description: Topic created successfully
- *          content: 
- *            application/json:
- *              schema:
- *                type: object
- *                propierties:
- *                  $ref: "#/components/schemas/Topic"
+ *          description: Item created successfully
+ *              
  */
 router.post("/",
 authentication, 

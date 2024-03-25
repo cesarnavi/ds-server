@@ -7,9 +7,23 @@ const authRoutes = Router();
  *  /auth/login:
  *    get:
  *      summary: Login with username and email
+ *      requestBody:
+ *        description: required fields are (email  username)
+ *        required: true
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                username:
+ *                  type: string
+ *                email:
+ *                 type: string   
  *      responses:
  *       '200':
- *         description: Get a 1 hour valid token
+ *         description: Get a 1 hour valid token and user info
+ *       '4XX':
+ *         description: Invalid credentials.
  *       '5XX':
  *         description: Unexpected error.
 */
@@ -22,9 +36,10 @@ authRoutes.post("/login", login);
  *      responses:
  *       '200':
  *         description: Get a 1 hour valid token and session info
+ *       '4XX':
+ *         description: Invalid credentials.
  *       '5XX':
  *         description: Unexpected error.
- * 
  * 
 */
 authRoutes.get("/me",authentication, me);
