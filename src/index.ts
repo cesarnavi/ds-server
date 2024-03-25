@@ -1,5 +1,7 @@
 import os from 'os';
 import  cluster from 'cluster';
+import dotenv from "dotenv";
+dotenv.config();
 import Server from './server';
 
 async function run(){
